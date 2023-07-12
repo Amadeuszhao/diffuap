@@ -16,7 +16,7 @@ from torch import optim
 import pandas as pd
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--save_dir', default="output", type=str,
+parser.add_argument('--save_dir', default="perturb_output", type=str,
                     help='Where to save the adversarial examples, and other results')
 parser.add_argument('--images_root', default=r"demo\images", type=str,
                     help='The clean images root directory')
@@ -63,10 +63,10 @@ seed_torch(42)
 
 def run_diffusion_attack(image, label, diffusion_model,uap,custom_loss,optimizer_uap,
                         target_label, diffusion_steps, guidance=2.5,
-                          save_dir=r"/home/zhaowei/diffusion/output", res=224,
+                          save_dir=r"/home/zhaowei/diffusion/perturb_output", res=224,
                          model_name="inception", start_step=15, iterations=30, args=None):
 
-    adv_image, clean_acc, adv_acc , uap = diff_latent_perturb.diffattack(diffusion_model, label, uap,custom_loss,optimizer_uap,target_label,
+    adv_image, clean_acc, adv_acc,target_acc , uap = diff_latent_perturb.diffattack(diffusion_model, label, uap,custom_loss,optimizer_uap,target_label,
                                                                   num_inference_steps=diffusion_steps,
                                                                   guidance_scale=guidance,
                                                                   image=image,
@@ -74,7 +74,7 @@ def run_diffusion_attack(image, label, diffusion_model,uap,custom_loss,optimizer
                                                                   start_step=start_step,
                                                                   iterations=iterations, args=args)
 
-    return adv_image, clean_acc, adv_acc, uap
+    return adv_image, clean_acc, adv_acc,target_acc, uap
 
 
 if __name__ == "__main__":
@@ -124,6 +124,7 @@ if __name__ == "__main__":
     images = []
     clean_all_acc = 0
     adv_all_acc = 0
+    target_all_acc = 0
     if is_test:
         uap = np.load('uap/train_uap')
         uap = torch.tensor(uap,device='cuda')
@@ -142,7 +143,7 @@ if __name__ == "__main__":
         tmp_image = Image.open(image_path).convert('RGB')
         tmp_image.save(os.path.join(save_dir, str(ind).rjust(4, '0') + "_originImage.png"))
 
-        adv_image, clean_acc, adv_acc, uap = run_diffusion_attack(tmp_image, label[ind:ind + 1],
+        adv_image, clean_acc, adv_acc,target_acc, uap = run_diffusion_attack(tmp_image, label[ind:ind + 1],
                                                              ldm_stable,
                                                              uap,
                                                             custom_loss,
@@ -164,11 +165,12 @@ if __name__ == "__main__":
 
         clean_all_acc += clean_acc
         adv_all_acc += adv_acc
-
+        target_all_acc += target_acc
+    np.save('uap/perturb_uap',uap.detach().cpu().numpy())
     print("Clean acc: {}%".format(clean_all_acc / len(all_images) * 100))
     print("Adv acc: {}%".format(adv_all_acc / len(all_images) * 100))
-
-    np.save('uap/perturb_uap',uap.detach().cpu().numpy())
+    print("Target acc: {}%".format(target_all_acc / len(all_images) * 100))
+    
     
     images = np.concatenate(images)
     adv_images = np.concatenate(adv_images)

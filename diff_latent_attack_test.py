@@ -154,7 +154,7 @@ def diffattack(
         iterations=30,
         verbose=True,
         topN=1,
-        eps=30/255,
+        eps=255/255,
         args=None
 ):
     label = torch.from_numpy(label).long().cuda()
@@ -168,6 +168,7 @@ def diffattack(
     classifier.requires_grad_(False)
     ori_flag = 1
     adv_flag = 1
+    target_flag = 1
 
     height = width = res
 
@@ -363,11 +364,15 @@ def diffattack(
     pred = classifier(out_image)
     pred_label = torch.argmax(pred, 1).detach()
     pred_accuracy = (torch.argmax(pred, 1).detach() == label).sum().item() / len(label)
+    target_accuracy = (torch.argmax(pred, 1).detach() == target_class).sum().item() / len(target_class)
+
     print("Accuracy on adversarial examples: {}%".format(pred_accuracy * 100))
     if pred_accuracy_clean == 0.0:
         ori_flag = 0.0
     if pred_accuracy == 0.0:
         adv_flag = 0.0
+    if target_accuracy == 0.0:
+        target_flag = 0.0
     logit = torch.nn.Softmax()(pred)
     print("after_pred:", pred_label, logit[0, pred_label[0]])
     print("after_true:", label, logit[0, label[0]])
@@ -418,4 +423,4 @@ def diffattack(
     # utils.show_self_attention_comp(prompt, controller, res=14, from_where=("up", "down"),
     #                                save_path=r"{}_selfAttentionAfter.jpg".format(save_path), select=1)
 
-    return image[0], ori_flag, adv_flag ,uap
+    return image[0], ori_flag, adv_flag,target_flag ,uap

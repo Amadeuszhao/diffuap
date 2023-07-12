@@ -8,6 +8,7 @@
 ## Current
 -  First version completed, use uap with clamp. Add in the test UAP part
 -  Second version completed add in the part where treat the output as adversarial image
+- 1. 添加target attack的部分
 
 ## Archive 
 - 最开始的版本没有添加test的部分,这部分test的部分可能需要重新写

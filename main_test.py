@@ -66,7 +66,7 @@ def run_diffusion_attack(image, label, diffusion_model,uap,custom_loss,optimizer
                           save_dir=r"/home/zhaowei/diffusion/output", res=224,
                          model_name="inception", start_step=15, iterations=30, args=None):
 
-    adv_image, clean_acc, adv_acc , uap = diff_latent_attack_test.diffattack(diffusion_model, label, uap,custom_loss,optimizer_uap,target_label,
+    adv_image, clean_acc, adv_acc ,target_acc , uap = diff_latent_attack_test.diffattack(diffusion_model, label, uap,custom_loss,optimizer_uap,target_label,
                                                                   num_inference_steps=diffusion_steps,
                                                                   guidance_scale=guidance,
                                                                   image=image,
@@ -74,7 +74,7 @@ def run_diffusion_attack(image, label, diffusion_model,uap,custom_loss,optimizer
                                                                   start_step=start_step,
                                                                   iterations=iterations, args=args)
 
-    return adv_image, clean_acc, adv_acc, uap
+    return adv_image, clean_acc, adv_acc,target_acc ,  uap
 
 
 if __name__ == "__main__":
@@ -116,33 +116,34 @@ if __name__ == "__main__":
         if os.path.exists(imagePath):
             filterDatapath.append(imagePath)
             filterLabels.append(labels[i])
-    all_images = np.array(filterDatapath)
-    label = np.array(filterLabels)
+    all_images = np.array(filterDatapath)[0:5]
+    label = np.array(filterLabels)[0:5]
     print('There are %d images' % len(all_images))
     print('There are %d images' % len(label))
     adv_images = []
     images = []
     clean_all_acc = 0
     adv_all_acc = 0
+    target_all_acc = 0
     if is_test:
         uap = np.load('uap/train_uap.npy')
         uap = torch.tensor(uap,device='cuda')
         uap.requires_grad_(False)
         custom_loss = None
         optimizer_uap = None
-        target_label = 483
+        target_label = 949
     else:
         uap = torch.nn.Parameter(torch.zeros(size=(4, 28, 28), requires_grad=True))
         uap = torch.tensor(uap,device='cuda')
         uap.requires_grad_(True)
         custom_loss = BoundedLogitLossFixedRef(use_cuda=True)
-        optimizer_uap = optim.AdamW([uap], lr=5e-2)
-        target_label = 483
+        optimizer_uap = optim.AdamW([uap], lr=1e-2)
+        target_label = 949
     for ind, image_path in enumerate(all_images):
         tmp_image = Image.open(image_path).convert('RGB')
         tmp_image.save(os.path.join(save_dir, str(ind).rjust(4, '0') + "_originImage.png"))
 
-        adv_image, clean_acc, adv_acc, uap = run_diffusion_attack(tmp_image, label[ind:ind + 1],
+        adv_image, clean_acc, adv_acc,target_acc, uap = run_diffusion_attack(tmp_image, label[ind:ind + 1],
                                                              ldm_stable,
                                                              uap,
                                                             custom_loss,
@@ -164,10 +165,11 @@ if __name__ == "__main__":
 
         clean_all_acc += clean_acc
         adv_all_acc += adv_acc
+        target_all_acc += target_acc
 
     print("Clean acc: {}%".format(clean_all_acc / len(all_images) * 100))
     print("Adv acc: {}%".format(adv_all_acc / len(all_images) * 100))
-
+    print("Target acc: {}%".format(target_all_acc / len(all_images) * 100))
     np.save('uap/train_uap',uap.detach().cpu().numpy())
     
     images = np.concatenate(images)
