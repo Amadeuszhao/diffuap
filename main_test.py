@@ -125,7 +125,7 @@ if __name__ == "__main__":
     clean_all_acc = 0
     adv_all_acc = 0
     if is_test:
-        uap = np.load('uap/train_uap')
+        uap = np.load('uap/train_uap.npy')
         uap = torch.tensor(uap,device='cuda')
         uap.requires_grad_(False)
         custom_loss = None

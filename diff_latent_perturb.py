@@ -325,14 +325,16 @@ def diffattack(
         out_image = out_image[:, :, :].sub(mean).div(std)
         out_image = out_image.permute(0, 3, 1, 2)
         
-        out_image_normalize = normalize(out_image)
-        output_image = out_image_normalize * eps + normalize(test_image.cuda())
-        out_image = unnormalize(output_image)
+        out_image_normalize,lmean,lstd = normalize(out_image)
+        test_image , tmean,tstd = normalize(test_image.cuda())
+        output_image = out_image_normalize * eps + test_image
+        out_image = unnormalize(output_image,tmean,tstd)
         pred = classifier(out_image)
         # print(pred.shape)
         target_class = torch.tensor([target_class]).cuda()
         # print(target_class.shape)
         if optimizer_uap is not None:
+            # print('optimize now')
             optimizer_uap.zero_grad()
             loss_cls = criterion(pred, target_class)
             loss_mse = loss_func(out_image,test_image.cuda())

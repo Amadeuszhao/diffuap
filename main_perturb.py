@@ -168,7 +168,7 @@ if __name__ == "__main__":
     print("Clean acc: {}%".format(clean_all_acc / len(all_images) * 100))
     print("Adv acc: {}%".format(adv_all_acc / len(all_images) * 100))
 
-    np.save('uap/train_uap',uap.detach().cpu().numpy())
+    np.save('uap/perturb_uap',uap.detach().cpu().numpy())
     
     images = np.concatenate(images)
     adv_images = np.concatenate(adv_images)
